@@ -1,29 +1,31 @@
 package com.test.kush.photo.clone.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
 
-@NoArgsConstructor
+@Entity
+@Table(name = "photos")
 @Getter
 @Setter
-
-@Table("PHOTOS")
+@NoArgsConstructor
 public class Photo {
 
     @Id
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @JsonIgnore
+    @Column(name = "filename", nullable = false)
+    private String filename;
+
+    @Column(name = "original_name", nullable = false)
+    private String originalName;
+
+    @Column(name = "content_type", nullable = false)
+    private String contentType;
+
+    @Lob
+    @Column(name = "data", nullable = false)
     private byte[] data;
-
-    private String ContentType;
-
-    @NotEmpty
-    private  String fileName;
-
 }

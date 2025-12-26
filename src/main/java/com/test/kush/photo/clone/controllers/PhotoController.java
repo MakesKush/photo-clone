@@ -1,49 +1,56 @@
 package com.test.kush.photo.clone.controllers;
 
-import com.test.kush.photo.clone.service.PhotoService;
+import com.test.kush.photo.clone.dto.PhotoDto;
 import com.test.kush.photo.clone.model.Photo;
+import com.test.kush.photo.clone.service.PhotoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.Collection;
-
+import java.util.List;
 
 @RestController
+@RequestMapping("/photos")
 @RequiredArgsConstructor
 public class PhotoController {
 
-
     private final PhotoService photoService;
 
-
-    @GetMapping("/")
-    public String hello() {
-        return "Hello";
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PhotoDto upload(@RequestPart("file") MultipartFile file) throws IOException {
+        Photo saved = photoService.save(file);
+        return toDto(saved);
     }
 
-    @GetMapping("/photos")
-    public Iterable<Photo> get() {
-        return photoService.get();
-    }
-
-    @GetMapping("/photos/{id}")
-    public  Photo get(@PathVariable Integer id) {
-        Photo photo = photoService.get(id);
-        if (photo == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        return photo;
+    @GetMapping
+    public List<PhotoDto> list() {
+        return photoService.list().stream().map(this::toDto).toList();
     }
 
     @DeleteMapping("/photos/{id}")
-    public  void delete(@PathVariable Integer id) {
-        photoService.remove(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        try {
+            photoService.deleteById(id);
+            return ResponseEntity.noContent().build(); // 204
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();  // 404
+        }
     }
 
-    @PostMapping("/photos")
-    public Photo create(@RequestPart("file") MultipartFile file) throws IOException {
-        return photoService.save(file.getOriginalFilename(), file.getContentType(), file.getBytes());
+    private PhotoDto toDto(Photo p) {
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String url = baseUrl + "/photos/" + p.getId() + "/content"; // <-- вот ссылка на картинку
+        return new PhotoDto(
+                p.getId(),
+                p.getFilename(),
+                p.getOriginalName(),
+                p.getContentType(),
+                p.getData() != null ? p.getData().length : 0,
+                url
+        );
     }
 }
